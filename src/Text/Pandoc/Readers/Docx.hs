@@ -295,6 +295,9 @@ runStyleToTransform rPr' = do
       bold rPr | ctl = isBoldCTL rPr
                | otherwise = isBold rPr
       go rPr
+        | Just color <- rColor rPr =
+            -- 将颜色添加为属性，存储在 `dir` 或其他合适的位置
+            spanWith ("", [], [("color", color)]) . go rPr{rColor = Nothing}
         | Just sn <- getStyleName <$> rParentStyle rPr
         , sn `elem` spansToKeep =
             spanWith ("", [normalizeToClassName sn], [])

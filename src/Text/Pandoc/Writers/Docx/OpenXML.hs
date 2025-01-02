@@ -769,6 +769,12 @@ inlineToOpenXML' opts (Span (ident,classes,kvs) ils) = do
                               (stDynamicTextProps s)}
                       return $ withTextPropM (rStyleM sty)
                    _ -> return id
+  
+  -- 提取颜色属性
+  let color = lookup "color" kvs
+  let colorNode = maybe [] (\c -> [mknode "w:color" [("w:val", c)] ()]) color
+  let colorMod = withTextProp (mknode "w:rPr" [] colorNode)
+
   let dirmod = case lookup "dir" kvs of
                  Just "rtl" -> local (\env -> env { envRTL = True })
                  Just "ltr" -> local (\env -> env { envRTL = False })
@@ -809,7 +815,7 @@ inlineToOpenXML' opts (Span (ident,classes,kvs) ils) = do
   let langmod = case lookup "lang" kvs of
                   Nothing -> id
                   Just lang -> local (\env -> env{envLang = Just lang})
-  contents <- insmod $ delmod $ dirmod $ stylemod $ pmod $
+  contents <- insmod $ delmod $ dirmod $ stylemod $ colorMod $ pmod $
               langmod $ inlinesToOpenXML opts ils
   wrapBookmark ident contents
 inlineToOpenXML' opts (Strong lst) =

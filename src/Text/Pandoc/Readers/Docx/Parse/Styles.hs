@@ -115,6 +115,7 @@ data RunStyle = RunStyle { isBold       :: Maybe Bool
                          , rVertAlign   :: Maybe VertAlign
                          , rUnderline   :: Maybe Text
                          , rParentStyle :: Maybe CharStyle
+                         , rColor       :: Maybe Text
                          }
                 deriving Show
 
@@ -145,6 +146,7 @@ defaultRunStyle = RunStyle { isBold = Nothing
                            , rVertAlign = Nothing
                            , rUnderline = Nothing
                            , rParentStyle = Nothing
+                           , rColor = Nothing
                            }
 
 archiveToStyles'
@@ -291,6 +293,12 @@ elemToRunStyle ns element parentStyle
           findChildByName ns "w" "u" rPr >>=
           findAttrByName ns "w" "val"
       , rParentStyle = parentStyle
+      , rColor =
+          let color = findChildByName ns "w" "color" rPr >>=
+                      findAttrByName ns "w" "val"
+          in case color of
+              Just "000000" -> Nothing  -- 忽略黑色（默认颜色）
+              other -> other
       }
 elemToRunStyle _ _ _ = defaultRunStyle
 

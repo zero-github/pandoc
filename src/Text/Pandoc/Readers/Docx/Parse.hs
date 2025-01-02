@@ -99,6 +99,7 @@ import Text.Pandoc.XML.Light
       Content(Elem),
       Element(..),
       findElements )
+import Text.Pandoc.Definition (Attr)
 
 data ReaderEnv = ReaderEnv { envNotes         :: Notes
                            , envComments      :: Comments
@@ -367,6 +368,7 @@ leftBiasedMergeRunStyle a b = RunStyle
     , rVertAlign = rVertAlign a <|> rVertAlign b
     , rUnderline = rUnderline a <|> rUnderline b
     , rParentStyle = rParentStyle a
+    , rColor = rColor a <|> rColor b
     }
 
 -- (width, height) in EMUs
@@ -1065,9 +1067,20 @@ elemToParPart' ns element
   , Just _ <- findElement (QName "chart" (Just c_ns) (Just "c")) drawingElem
   = return [Chart]
 elemToParPart' ns element
-  | isElem ns "w" "r" element = do
-    runs <- elemToRun ns element
-    return $ map PlainRun runs
+  | isElem ns "w" "r" element =  
+      (do
+        runs <- elemToRun ns element
+        let runParts = map (\(Run runStyle elems) ->
+                              let attrs = case rColor runStyle of
+                                            Just c -> ("", [], [("color", "#" <> c)])
+                                            Nothing -> ("", [], [])
+                              in PlainRun $ Run runStyle (map (addColorToRunElem attrs) elems)
+                            ) runs
+        return runParts)
+  where
+    addColorToRunElem :: Attr -> RunElem -> RunElem
+    addColorToRunElem attrs (TextRun t) = TextRun t
+    addColorToRunElem _ elem = elem
 elemToParPart' ns element
   | Just change <- getTrackedChange ns element = do
       runs <- mconcat <$> mapD (elemToParPart' ns) (elChildren element)
